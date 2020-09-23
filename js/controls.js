@@ -1,5 +1,4 @@
 Hooks.on('getSceneControlButtons', (controls) => {
-	console.log('test')
 	if (game.user.isGM) {
 	    controls.push({
 			name: 'terrain',
@@ -8,11 +7,16 @@ Hooks.on('getSceneControlButtons', (controls) => {
 			layer: 'TerrainLayer',
 			tools: [
 				{
-					name: 'select',
+					name: 'add',
 					title:'EM.select',
-					icon:'fas fa-expand'
+					icon:'fas fa-plus-square'
 				},
 				{
+					name:'subtract',
+					title:'EM.subtract',
+					icon:'fas fa-minus-square'
+				},
+			/*	{
 		          name: 'fillterrain',
 		          title: game.i18n.localize('EM.fill'),
 		          icon: 'fas fa-fill',
@@ -37,7 +41,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
 		            dg.render(true);
 		          },
 		          button: true,
-		        },
+		        },*/
 				{
 		          name: 'clearterrain',
 		          title: game.i18n.localize('EM.reset'),
@@ -65,7 +69,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
 		          button: true,
 		        },
 			],
-			activeTool:'select'
+			activeTool:'add'
 	  	})
 	}
 });

@@ -1,0 +1,11 @@
+{
+  "EM.ok": "OK",
+  "EM.sf": "Terrain Grid",
+  "EM.select":"Add Difficult Terrain",
+  "EM.subtract":"Remove Difficult Terrain",
+  "EM.fill":"Fill Grid",
+  "EM.confirmFill":"This will mark every grid space as difficult terrain, overwriting any spots you've marked.",
+  "EM.onoff": "Enable/Disable Terrain",
+  "EM.reset": "Reset Terrain",
+  "EM.confirmReset": "Are you sure? Terrain layer will be reset."
+}

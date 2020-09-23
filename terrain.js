@@ -4,11 +4,22 @@ Hooks.once('canvasInit', (canvas) => {
   // Add SimplefogLayer to canvas
  // CONFIG.debug.mouseInteraction = true;
  // console.log(canvas)
+ console.log('canvasInit')
   const layerct = canvas.stage.children.length;
   canvas.terrain = canvas.stage.addChildAt(new TerrainLayer(canvas.scene), layerct);
 
 });
+Hooks.on('canvasReady', (canvas) => {
+	console.log('canvasReady')
+	console.log(canvas.scene)
+	canvas.terrain.refreshScene(canvas.scene)
+})
+// Hooks.on('canvasReady',(canvas)=>{
+// 	  const layerct = canvas.stage.children.length;
 
+// 	  canvas.terrain = canvas.stage.addChildAt(new TerrainLayer(canvas.scene), layerct);
+
+// })
 
 
 /* On Canvas load
