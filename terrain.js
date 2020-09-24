@@ -10,9 +10,7 @@ Hooks.once('canvasInit', (canvas) => {
 
 });
 Hooks.on('canvasReady', (canvas) => {
-	console.log('canvasReady')
-	console.log(canvas.scene)
-	canvas.terrain.refreshScene(canvas.scene)
+
 })
 // Hooks.on('canvasReady',(canvas)=>{
 // 	  const layerct = canvas.stage.children.length;
