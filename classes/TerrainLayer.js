@@ -4,7 +4,8 @@ class TerrainSquare extends PIXI.Graphics {
   constructor(coord,...args){
     super(...args);
     this.coord = coord;
-    this.thePosition = `${coord.x}.${coord.y}`;
+    let topLeft = canvas.grid.grid.getPixelsFromGridPosition(coord.x,coord.y)
+    this.thePosition = `${topLeft[0]}.${topLeft[1]}`;
    
   }
 }
@@ -22,6 +23,7 @@ export class TerrainHighlight extends PIXI.Graphics {
      * Track distinct positions which have already been highlighted
      * @type {Set}
      */
+    this.visible = canvas.scene.getFlag('TerrainLayer','sceneVisibility') || true;
     this.positions = new Set();
   }
 
@@ -33,8 +35,8 @@ export class TerrainHighlight extends PIXI.Graphics {
    * @param {Number} y    The y-coordinate to highlight
    * @return {Boolean}    Whether or not to draw the highlight for this location
    */
-  highlight(x, y) {
-    let key = `${x}.${y}`;
+  highlight(pxX, pxY) {
+    let key = `${pxX}.${pxY}`;
     if ( this.positions.has(key) ) return false;
     this.positions.add(key);
     return true;
@@ -66,43 +68,41 @@ export class TerrainHighlight extends PIXI.Graphics {
 export class TerrainLayer extends CanvasLayer{
 	constructor(scene){
 		super();
-    console.log('TerrainLayer')
     this.scene = scene;
     this.sceneId = this.scene._id;
     this.layerName = `DifficultTerrain.${this.scene._id}`;
-    console.log(scene.getFlag('TerrainLayer','costGrid'))
-		
-    
     this.highlight = null;
     this.mouseInteractionManager = null;
     this.dragging = false;
     this._addListeners();
-    
-    
-    //Hooks.on('canvasReady', (scene, data) => this._updateScene(scene, data));
 	}
   async draw(){
-    console.log('Terrain Draw')
+
+    this._deRegisterMouseListeners()
     await super.draw();
     this.highlightLayers = {};
-     this.scene = canvas.scene;
+    this.scene = canvas.scene;
     this.sceneId = this.scene._id;
     this.layerName = `DifficultTerrain.${this.scene._id}`;
     this.highlight = this.addChild(new PIXI.Container());
     this.addHighlightLayer(this.layerName);
     this.costGrid = this.scene.getFlag('TerrainLayer','costGrid') || {};
-    this.buildFromCostGrid();
+    Hooks.once('canvasReady',this.buildFromCostGrid.bind(this))
     return this;
   }
- 
+  async tearDown(){
+    super.tearDown();
+    this._deRegisterMouseListeners()
+    this._deRegisterKeyboardListeners();
+  }
+  toggle(){
+    this.highlight.children[0].visible = !this.highlight.children[0].visible;
+    canvas.scene.setFlag('TerrainLayer','sceneVisibility', this.highlight.children[0].visible )
+  }
   _addListeners() {
-
-    // Remove all existing listeners
-    ///canvas.stage.removeAllListeners();
 
     // Define callback functions for mouse interaction events
     const callbacks = {
-      clickLeft: this._onClickLeft.bind(this),
       dragLeftStart: this._onDragLeftStart.bind(this),
       dragLeftMove: this._onDragLeftMove.bind(this),
       clickRight: this._onClickRight.bind(this),
@@ -120,6 +120,8 @@ export class TerrainLayer extends CanvasLayer{
     const layer = this.highlightLayers[name];
     if ( !layer || layer._destroyed ) {
       this.highlightLayers[name] = this.highlight.addChild(new TerrainHighlight(name));
+      console.log(canvas.scene.getFlag('TerrainLayer','sceneVisibility'))
+      canvas.terrain.highlight.children[0].visible = (typeof canvas.scene.getFlag('TerrainLayer','sceneVisibility') !='undefined') ?  canvas.scene.getFlag('TerrainLayer','sceneVisibility'):true;
     }
     return this.highlightLayers[name];
   }
@@ -134,7 +136,6 @@ export class TerrainLayer extends CanvasLayer{
     const layer = this.highlightLayers[name];
     if ( layer ) layer.clear();
   }
-
   /* -------------------------------------------- */
 
   /**
@@ -149,58 +150,66 @@ export class TerrainLayer extends CanvasLayer{
   highlightPosition(name, options) {
     const layer = this.highlightLayers[name];
     if ( !layer ) return false;
-    this.highlightGridPosition(layer, options);
+    if(canvas.grid.type == 1)
+      this.highlightGridPosition(layer, options);
+    else if(canvas.grid.type == 2 || canvas.grid.type == 3 || canvas.grid.type == 4 || canvas.grid.type == 5)
+      this.highlightHexPosition(layer,options);
   }
   /** @override */
-  highlightGridPosition(layer , {x, y, multiple=2}={}) {
+  highlightGridPosition(layer , {gridX, gridY, multiple=2}={}) {
     //GRID ALREADY HIGHLIGHTED
-    if ( !layer.highlight(x, y) ) {
-      const gs = canvas.dimensions.size;
-      const key = `${x}.${y}`;
+    let gsW = canvas.grid.grid.w;
+    let gsH = canvas.grid.grid.h;
+    
+    let px = canvas.grid.grid.getPixelsFromGridPosition(gridX,gridY)
+    
+    const key = `${px[0]}.${px[1]}`;
+    if ( layer.positions.has(key) ) {
+    
       let square = this.getSquare(layer,key)
 
-      let cost = this.costGrid[x/canvas.dimensions.size][y/canvas.dimensions.size];
+      let cost = this.costGrid[gridX][gridY];
       if(cost.multiple <3){
-        this.costGrid[x/canvas.dimensions.size][y/canvas.dimensions.size].multiple+=1;
+        this.costGrid[gridX][gridY].multiple+=1;
 
       }else{
-         this.costGrid[x/canvas.dimensions.size][y/canvas.dimensions.size].multiple=2;
+         this.costGrid[gridX][gridY].multiple=2;
       } 
       square.getChildAt(0).text = `x${cost.multiple}`;
       return;
     }else{
+       layer.highlight(px[0],px[1]);
       let s = canvas.dimensions.size;
-      let terrainSquare = new TerrainSquare({x:x,y:y})
+      let terrainSquare = new TerrainSquare({x:gridX,y:gridY})
       let offset = 15;
-      terrainSquare.x = x;
-      terrainSquare.y = y;
-      terrainSquare.width = s;
-      terrainSquare.height = s;
+      terrainSquare.x = px[0];
+      terrainSquare.y = px[1];
+      terrainSquare.width = gsW;
+      terrainSquare.height = gsH;
       terrainSquare.lineStyle(7, 0xffffff, 0.5);
-      terrainSquare.moveTo((s/2), offset);
-      terrainSquare.lineTo(offset, s-offset);
-      terrainSquare.lineTo(s-offset, s-offset);
-      terrainSquare.lineTo((s/2), offset);
+      terrainSquare.moveTo((gsW/2), offset);
+      terrainSquare.lineTo(offset, gsH-offset);
+      terrainSquare.lineTo(gsW-offset, gsH-offset);
+      terrainSquare.lineTo((gsW/2), offset);
       terrainSquare.closePath();
       terrainSquare.blendMode = PIXI.BLEND_MODES.OVERLAY;
    
       let text = new PIXI.Text('x'+multiple,{fontFamily : 'Arial', fontSize: 12, fill : 0xffffff,opacity:0.5, align : 'center'})
       text.blendMode = PIXI.BLEND_MODES.OVERLAY;
       text.anchor.set(0.5,0.5);
-      text.x = s/2;
-      text.y = (s/2)+7;
+      text.x = gsW/2;
+      text.y = (gsH/2)+7;
     
       terrainSquare.addChild(text);
       layer.addChild(terrainSquare);
-      this.addToCostGrid(x/s,y/s);
+      this.addToCostGrid(gridX,gridY);
     }
     
     
   }
+ 
 	_registerMouseListeners() {
-	  //  this.addListener('pointerdown', this._pointerDown);
 	    this.addListener('pointerup', this._pointerUp);
-	 //   this.addListener('pointermove', this._pointerMove);
 	    this.dragging = false;
 	}
 	_registerKeyboardListeners() {
@@ -230,58 +239,34 @@ export class TerrainLayer extends CanvasLayer{
     })
 	}
 	_deRegisterMouseListeners(){
-	//	this.removeListener('pointerdown', this._pointerDown);
     this.removeListener('pointerup', this._pointerUp);
-   // this.removeListener('pointermove', this._pointerMove);
 	}
 	_deRegisterKeyboardListeners(){
 		$(document).off('keydown')
     $(document).off('keyup');
 	}
-	_pointerDown(e) {
-		//console.log('pointerdown',e,e.data.origin,e.data.destination)
-    if(ui.controls.activeControl != 'terrain') return false;
 
-
-    let pos = e.data.getLocalPosition(canvas.app.stage);
-    //console.log(`x: ${pos.x}, y: ${pos.y}`);
-    let gridPt = canvas.grid.grid.getGridPositionFromPixels(pos.x,pos.y);
-    //Normalize the returned data because it's in [y,x] format
-    let [y,x] = gridPt;
-    let gs = canvas.dimensions.size;
-    console.log(x,y)
-    switch(e.data.button){
-      case 0:
-          //Left Mouse Click
-         
-          if(ui.controls.activeTool == 'add'){
-            this.addToCostGrid(x,y);
-            this.highlightPosition(this.layerName,{x:x*gs,y:y*gs})
-          }
-        break;
-      default:
-        break;
-    }
-	}
-	_pointerMove(e) {
-
-	}
 	_pointerUp(e) {
     let pos = e.data.getLocalPosition(canvas.app.stage);
     let gridPt = canvas.grid.grid.getGridPositionFromPixels(pos.x,pos.y);
-    let [y,x] = gridPt;  //Normalize the returned data because it's in [y,x] format
-    let gs = canvas.dimensions.size;
+    let pxX = canvas.grid.grid.getPixelsFromGridPosition(gridPt[0],gridPt[1])
+    
+    let [x,y] = gridPt;  //Normalize the returned data because it's in [y,x] format
+    let gsW = Math.round(canvas.grid.grid.w);
+    let gsH = Math.floor(canvas.grid.grid.h);
+    let gs = Math.min(gsW,gsH)
+    let gridPX = {x:Math.round(x*gsH),y:Math.round(y*gsW)}
+   
     switch(e.data.button){
       case 0:
         if(game.activeTool == 'add' && !this.dragging){
-          
-          this.highlightPosition(this.layerName,{x:x*gs,y:y*gs})
+          this.highlightPosition(this.layerName,{gridX:x,gridY:y})
          
           this.updateCostGridFlag()
         }else if(game.activeTool  == 'subtract'){
           const layer = canvas.terrain.getHighlightLayer(this.layerName);
-          const key = `${x*gs}.${y*gs}`;
-          this.removeDifficultTerrain(layer,x,y);
+          const key = `${gridPX.x}.${gridPX.y}`;
+          this.removeDifficultTerrain(layer,gridPX.x,gridPX.y);
           this.removeFromCostGrid(x,y);
           this.updateCostGridFlag()
         }
@@ -291,37 +276,112 @@ export class TerrainLayer extends CanvasLayer{
     }
     this.dragging = false;
 	}
-	_keyDown(e){
+  highlightHexPosition(layer,{gridX,gridY,multiple=2}={}){
+    
+    let gsW = Math.floor(canvas.grid.grid.w);
+    let gsH = Math.round(canvas.grid.grid.h);
+   
+    let topLeft = canvas.grid.grid.getPixelsFromGridPosition(gridX,gridY)
+    let pxX = topLeft[0];
+    let pxY = topLeft[1];
+  
+    const points = canvas.grid.grid.options.columns ? canvas.grid.grid.constructor.flatHexPoints : canvas.grid.grid.constructor.pointyHexPoints;
+    const coords = points.reduce((arr, p) => {
+      arr.push(topLeft[0] + (p[0]*gsW));
+      arr.push(topLeft[1] + (p[1]*gsH));
+      return arr;
+    }, []);
+    
+    const key = `${pxX}.${pxY}`;
+    if(layer.positions.has(key)) {
+      const gs = canvas.dimensions.size;
+      
+      let square = this.getSquare(layer,key)
 
-	}
+      let cost = this.costGrid[gridX][gridY];
+      if(cost.multiple <3){
+        this.costGrid[gridX][gridY].multiple+=1;
+
+      }else{
+         this.costGrid[gridX][gridY].multiple=2;
+      } 
+      square.getChildAt(0).text = `x${cost.multiple}`;
+      return;
+    }else{
+      let col = canvas.grid.grid.columns;
+      let even = canvas.grid.grid.even;
+     
+      let terrainSquare = new TerrainSquare({x:gridX,y:gridY})
+      layer.highlight(pxX,pxY);
+      
+      let offset = gsH* 0.16;
+
+      const halfW = (gsW/2)
+    
+      terrainSquare.y = topLeft[1];
+      terrainSquare.x = topLeft[0];
+     
+      terrainSquare.width = gsW;
+      terrainSquare.height = gsH;
+      
+     let text = new PIXI.Text('x'+multiple,{fontFamily : 'Arial', fontSize: 12, fill : 0xffffff,opacity:0.5, align : 'center'})
+
+      
+      if(canvas.grid.type == 4 || canvas.grid.type == 5){
+        terrainSquare.lineStyle(4, 0xffffff, 0.5);
+        terrainSquare.moveTo(halfW,offset*2);
+        terrainSquare.lineTo(offset*2, gsW-(offset*3));
+        terrainSquare.lineTo(gsW-(offset*2), gsW-(offset*3));
+        terrainSquare.lineTo(halfW, offset*2);
+        text.y = (gsH/2)+3;
+      }else{
+        terrainSquare.lineStyle(7, 0xffffff, 0.5);
+        terrainSquare.moveTo(halfW,offset);
+        terrainSquare.lineTo(offset, gsW-offset);
+        terrainSquare.lineTo(gsW-offset, gsW-offset);
+        terrainSquare.lineTo(halfW, offset);
+        text.y = (gsH/2)+7;
+      }
+      
+      terrainSquare.closePath();
+      terrainSquare.blendMode = PIXI.BLEND_MODES.OVERLAY;
+   
+      
+      text.blendMode = PIXI.BLEND_MODES.OVERLAY;
+      text.anchor.set(0.5,0.5);
+      text.x = gsW/2;
+      
+    
+      terrainSquare.addChild(text);
+     
+      
+      layer.addChild(terrainSquare);
+      this.addToCostGrid(gridX,gridY);
+    }
+  }
   removeFromCostGrid(x,y){
     if(typeof this.costGrid[x] == 'undefined') return false;
-    if(typeof this.costGrid[x][y] == undefined) return false;
+    if(typeof this.costGrid[x][y] == 'undefined') return false;
       
     delete this.costGrid[x][y];
-      
-      //this.scene.setFlag('TerrainLayer','costGrid',this.costGrid);
-      //this.scene.update({[`flags.costGrid.${x}.-=${y}`]:null})
   }
   addToCostGrid(x,y){
    
     if(typeof this.costGrid[x] == 'undefined')
       this.costGrid[x] = {}
     this.costGrid[x][y]={multiple:2,type:'ground'};
-    //await this.scene.setFlag('TerrainLayer',`costGrid.${x}.${y}`,{multiple:1,type:'ground'});
   }
   async updateCostGridFlag(){
-    let x = this.costGrid
+    let x = this.costGrid;
      await canvas.scene.unsetFlag('TerrainLayer','costGrid');
      await canvas.scene.setFlag('TerrainLayer','costGrid',x)
-     console.log('updateCostGridFlag')
   }
-	async buildFromCostGrid(){
-    console.log('Terrain',this.costGrid)
-    let gs = canvas.dimensions.size;
+	buildFromCostGrid(){
+
     for(let x in this.costGrid){
       for(let y in this.costGrid[x]){
-        this.highlightPosition(this.layerName,{x:x*gs,y:y*gs,multiple:this.costGrid[x][y].multiple})
+       
+        this.highlightPosition(this.layerName,{gridX:parseInt(x),gridY:parseInt(y),multiple:this.costGrid[x][y].multiple})
       }
     }
   }
@@ -332,31 +392,31 @@ export class TerrainLayer extends CanvasLayer{
     this.scene.unsetFlag('TerrainLayer','costGrid');
   }
   selectSquares(coords){
-    const gs = canvas.dimensions.size;
-    const startX = Math.floor(coords.x / gs);
-    const startY = Math.floor(coords.y / gs);
-    const endX =  Math.floor((coords.width+coords.x)/gs);
-    const endY = Math.floor((coords.height+coords.y)/gs);
+    const startPx = canvas.grid.grid.getCenter(coords.x,coords.y)
+    const startGrid = canvas.grid.grid.getGridPositionFromPixels(startPx[0],startPx[1])
 
-    for(let x = startX;x<=endX;x++){
-      for(let y = startY;y<=endY;y++){
-        
+    const endPx =  canvas.grid.grid.getCenter(coords.x+coords.width,coords.y+coords.height)
+    const endGrid = canvas.grid.grid.getGridPositionFromPixels(endPx[0],endPx[1])
+
+    for(let x = startGrid[1];x<=endGrid[1];x++){
+      for(let y = startGrid[0];y<=endGrid[0];y++){
+        let [pxX,pxY] = canvas.grid.grid.getPixelsFromGridPosition(y,x)
         if(game.activeTool == 'add' && TLControlPress == false){
-          this.highlightPosition(this.layerName,{x:x*gs,y:y*gs})
-          this.addToCostGrid(x,y);
+          this.highlightPosition(this.layerName,{gridX:y,gridY:x})
+          //this.addToCostGrid(x,y);
         }else if(game.activeTool == 'subtract' || TLControlPress){
           const layer = canvas.terrain.getHighlightLayer(this.layerName);
-          const key = `${x*gs}.${y*gs}`;
-          this.removeDifficultTerrain(layer,x,y)
+          const key = `${pxX}.${pxY}`;
+
+          this.removeDifficultTerrain(layer,key)
           this.removeFromCostGrid(x,y);
         }
       }
     }
     this.updateCostGridFlag();
+
   }
-  removeDifficultTerrain(layer,x,y){
-     let gs = canvas.dimensions.size;
-     const key = `${x*gs}.${y*gs}`;
+  removeDifficultTerrain(layer,key){
     if(!layer.positions.has(key)) return false;
     let square = this.getSquare(layer,key);
     square.destroy();
@@ -368,18 +428,13 @@ export class TerrainLayer extends CanvasLayer{
      let square = layer.children.find((x)=>{
       return x.thePosition == key
     })
-     return square;
+     return square || false;
   }
   _onDragLeftStart(e){
     this.dragging = true;
-    console.log('_onDragLeftStart')
   }
-  _onClickLeft(e){
-    //if(this.mouseInteractionManager._state)
-   
-  }
+
   _onDragLeftMove(e){
-    console.log('dragMove')
     const isSelect = ["add","subtract"].includes(game.activeTool);
     if ( isSelect ) return this._onDragSelect(e);
   }
@@ -399,9 +454,9 @@ export class TerrainLayer extends CanvasLayer{
     // Draw the select rectangle
     canvas.controls.drawSelect(coords);
     event.data.coords = coords;
+
   }
   _onDragLeftDrop(e){
-    //console.log(e.data.coords)
     const tool = game.activeTool;
     // Conclude a select event
 
@@ -417,13 +472,16 @@ export class TerrainLayer extends CanvasLayer{
     /* DELETE TERRAIN SQUARE */
     let pos = e.data.getLocalPosition(canvas.app.stage);
     let gridPt = canvas.grid.grid.getGridPositionFromPixels(pos.x,pos.y);
+    let px = canvas.grid.grid.getPixelsFromGridPosition(gridPt[0],gridPt[1])
     //Normalize the returned data because it's in [y,x] format
-    let [y,x] = gridPt;
-    let gs = canvas.dimensions.size;
-    let key = `${x*gs}.${y*gs}`;
-    if(game.activeTool == 'add'){
-      const layer = canvas.terrain.getHighlightLayer(this.layerName);
-      this.removeDifficultTerrain(layer,x,y);
+    let [x,y] = gridPt;
+
+    let key = `${px[0]}.${px[1]}`;
+    const layer = canvas.terrain.getHighlightLayer(this.layerName);
+    let square = this.getSquare(layer,key)
+    if(game.activeTool == 'add' && square){
+     
+      this.removeDifficultTerrain(layer,key);
       this.removeFromCostGrid(x,y);
       this.updateCostGridFlag();
     }
@@ -453,24 +511,19 @@ export class TerrainLayer extends CanvasLayer{
     
   }
   activate() {
-    console.log('Terrain activate')
     super.activate();
     this.interactive = true;
     this._registerMouseListeners();
     this._registerKeyboardListeners();
-
-      //TODO: Show GRID HIGHLIGHT OF EXISTING POINTS
   }
 	/**
 	* Actions upon layer becoming inactive
 	*/
 	deactivate() {
-    console.log('Terrain deactivate')
 		super.deactivate();
 		this.interactive = false;
 		this._deRegisterMouseListeners();
 		this._deRegisterKeyboardListeners();
 
-    //TODO: Hide grid highlight layer
 	}
 }

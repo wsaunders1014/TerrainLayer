@@ -6,6 +6,16 @@ Hooks.on('getSceneControlButtons', (controls) => {
 			icon: 'fas fa-mountain',
 			layer: 'TerrainLayer',
 			tools: [
+				 {
+		          name: 'terraintoggle',
+		          title: game.i18n.localize('EM.onoff'),
+		          icon: 'fas fa-eye',
+		          onClick: () => {
+		            canvas.terrain.toggle();
+		          },
+		          active: canvas.terrain.highlight.children[0].visible,
+		          toggle: true
+		        },
 				{
 					name: 'add',
 					title:'EM.select',
@@ -16,32 +26,6 @@ Hooks.on('getSceneControlButtons', (controls) => {
 					title:'EM.subtract',
 					icon:'fas fa-minus-square'
 				},
-			/*	{
-		          name: 'fillterrain',
-		          title: game.i18n.localize('EM.fill'),
-		          icon: 'fas fa-fill',
-		          onClick: () => {
-		            const dg = new Dialog({
-		              title: game.i18n.localize('EM.fill'),
-		              content: game.i18n.localize('EM.confirmFill'),
-		              buttons: {
-		                fill: {
-		                  icon: '<i class="fas fa-fill"></i>',
-		                  label: 'Fill',
-		                  callback: () => canvas.terrain.fillGrid(),
-		                },
-		                
-		                cancel: {
-		                  icon: '<i class="fas fa-times"></i>',
-		                  label: 'Cancel',
-		                },
-		              },
-		              default: 'cancel',
-		            });
-		            dg.render(true);
-		          },
-		          button: true,
-		        },*/
 				{
 		          name: 'clearterrain',
 		          title: game.i18n.localize('EM.reset'),
