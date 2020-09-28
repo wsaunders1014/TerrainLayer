@@ -12,4 +12,5 @@ This is still in very early stages still. Some ideas for the future of the mod i
 * Impassable tiles and/or "dangerous" tiles. 
 
 # Changelog
+0.0.2 - Realized Terrain Squares were getting painted over fog and sight layers. Fixed that right up.
 0.0.1 - Initial alpha release. Adds Terrain Layer to Foundry. GM can paint Difficult Terrain Squares on to map. Purely Aesthetic at this point, but my hope is that other module developers can use this as a dependency if needed to check the grid for places with difficult terrain. Plan on doing deep integration with ShowDragDistance and my future enhanced movement module.
