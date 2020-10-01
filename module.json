@@ -3,7 +3,7 @@
   "title": "Terrain Layer",
   "description": "A base module that adds a Terrain Layer to Foundry to paint difficult terrain squares and to be used as a dependency for other mods who might integrate it with their functionality.",
   "authors": [{"name":"Will Saunders","email":"willsaunders1014@gmail.com" }],
-  "version": "0.0.2",
+  "version": "0.0.3",
   "minimumCoreVersion": "0.6.4",
   "compatibleCoreVersion":"0.6.6",
   "scripts":[
@@ -25,5 +25,5 @@
   "changelog":"https://raw.githubusercontent.com/wsaunders1014/TerrainLayer/master/README.md",
   "url":"https://github.com/wsaunders1014/TerrainLayer",
   "manifest":"https://raw.githubusercontent.com/wsaunders1014/TerrainLayer/master/module.json",
-  "download":"https://github.com/wsaunders1014/TerrainLayer/releases/download/0.0.2/TerrainLayer.zip"
+  "download":"https://github.com/wsaunders1014/TerrainLayer/releases/download/0.0.3/TerrainLayer.zip"
 }
