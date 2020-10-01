@@ -86,7 +86,7 @@ export class TerrainLayer extends CanvasLayer{
     this.layerName = `DifficultTerrain.${this.scene._id}`;
     this.highlight = this.addChild(new PIXI.Container());
     this.addHighlightLayer(this.layerName);
-    this.costGrid = this.scene.getFlag('TerrainLayer','costGrid') || {};
+    this.costGrid = this.scene.getFlag('TerrainLayer','costGrid') ?? {};
     Hooks.once('canvasReady',this.buildFromCostGrid.bind(this))
     return this;
   }
@@ -120,7 +120,7 @@ export class TerrainLayer extends CanvasLayer{
     const layer = this.highlightLayers[name];
     if ( !layer || layer._destroyed ) {
       this.highlightLayers[name] = this.highlight.addChild(new TerrainHighlight(name));
-      console.log(canvas.scene.getFlag('TerrainLayer','sceneVisibility'))
+     
       canvas.terrain.highlight.children[0].visible = (typeof canvas.scene.getFlag('TerrainLayer','sceneVisibility') !='undefined') ?  canvas.scene.getFlag('TerrainLayer','sceneVisibility'):true;
     }
     return this.highlightLayers[name];
@@ -175,6 +175,7 @@ export class TerrainLayer extends CanvasLayer{
       }else{
          this.costGrid[gridX][gridY].multiple=2;
       } 
+      this.updateCostGridFlag();
       square.getChildAt(0).text = `x${cost.multiple}`;
       return;
     }else{
@@ -305,6 +306,7 @@ export class TerrainLayer extends CanvasLayer{
       }else{
          this.costGrid[gridX][gridY].multiple=2;
       } 
+      this.updateCostGridFlag()
       square.getChildAt(0).text = `x${cost.multiple}`;
       return;
     }else{
@@ -356,7 +358,7 @@ export class TerrainLayer extends CanvasLayer{
      
       
       layer.addChild(terrainSquare);
-      this.addToCostGrid(gridX,gridY);
+      this.addToCostGrid(gridX,gridY,multiple);
     }
   }
   removeFromCostGrid(x,y){
@@ -365,14 +367,14 @@ export class TerrainLayer extends CanvasLayer{
       
     delete this.costGrid[x][y];
   }
-  addToCostGrid(x,y){
+  addToCostGrid(x,y,multiple=2){
    
     if(typeof this.costGrid[x] == 'undefined')
       this.costGrid[x] = {}
-    this.costGrid[x][y]={multiple:2,type:'ground'};
+    this.costGrid[x][y]={multiple:multiple,type:'ground'};
   }
   async updateCostGridFlag(){
-    let x = this.costGrid;
+    let x = duplicate(this.costGrid);
      await canvas.scene.unsetFlag('TerrainLayer','costGrid');
      await canvas.scene.setFlag('TerrainLayer','costGrid',x)
   }
@@ -380,7 +382,7 @@ export class TerrainLayer extends CanvasLayer{
 
     for(let x in this.costGrid){
       for(let y in this.costGrid[x]){
-       
+        console.log(this.costGrid[x][y].multiple)
         this.highlightPosition(this.layerName,{gridX:parseInt(x),gridY:parseInt(y),multiple:this.costGrid[x][y].multiple})
       }
     }
@@ -396,7 +398,7 @@ export class TerrainLayer extends CanvasLayer{
     const startGrid = canvas.grid.grid.getGridPositionFromPixels(startPx[0],startPx[1])
 
     const endPx =  canvas.grid.grid.getCenter(coords.x+coords.width,coords.y+coords.height)
-    const endGrid = canvas.grid.grid.getGridPositionFromPixels(endPx[0],endPx[1])
+    const endGrid = canvas.grid.grid.getGridPosiomtionFrPixels(endPx[0],endPx[1])
 
     for(let x = startGrid[1];x<=endGrid[1];x++){
       for(let y = startGrid[0];y<=endGrid[0];y++){
