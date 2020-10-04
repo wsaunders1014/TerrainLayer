@@ -1,0 +1,12 @@
+{
+    "EM.ok": "OK",
+    "EM.sf": "Cuadrícula del Terreno",
+    "EM.select":"Agregar Terreno Dificil",
+    "EM.subtract":"Eliminar Terreno Dificil",
+    "EM.fill":"Llenar Cuadrícula",
+    "EM.confirmFill":"Este acción marcará todos de las cajas en la cuadrícula con el terreno difícil y sobrescribirá todas de las cajas previamente marcadas.",
+    "EM.onoff": "Habilitar/Inhabilitar Terreno",
+    "EM.reset": "Reajustar Terreno",
+    "EM.confirmReset": "¿Estas seguro? La capa del terreno se restablecerá."
+  }
+  
