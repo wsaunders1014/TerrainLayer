@@ -11,7 +11,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
 		          title: game.i18n.localize('EM.onoff'),
 		          icon: 'fas fa-eye',
 		          onClick: () => {
-		            canvas.terrain.toggle();
+		            canvas.terrain.toggle(true);
 		          },
 		          active: canvas.terrain.highlight.children[0].visible,
 		          toggle: true
@@ -38,7 +38,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
 		                reset: {
 		                  icon: '<i class="fas fa-trash"></i>',
 		                  label: 'Reset',
-		                  callback: () => canvas.terrain.resetGrid(),
+		                  callback: () => canvas.terrain.resetGrid(true),
 		                },
 		                
 		                cancel: {

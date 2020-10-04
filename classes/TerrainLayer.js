@@ -95,9 +95,12 @@ export class TerrainLayer extends CanvasLayer{
     this._deRegisterMouseListeners()
     this._deRegisterKeyboardListeners();
   }
-  toggle(){
+  async toggle(emit = false){
     this.highlight.children[0].visible = !this.highlight.children[0].visible;
-    canvas.scene.setFlag('TerrainLayer','sceneVisibility', this.highlight.children[0].visible )
+    if(game.user.isGM && emit){
+      await canvas.scene.setFlag('TerrainLayer','sceneVisibility', this.highlight.children[0].visible )
+      game.socket.emit('module.TerrainLayer',{action:'toggle',arguments:[]})
+    }
   }
   _addListeners() {
 
@@ -156,7 +159,7 @@ export class TerrainLayer extends CanvasLayer{
       this.highlightHexPosition(layer,options);
   }
   /** @override */
-  highlightGridPosition(layer , {gridX, gridY, multiple=2}={}) {
+  highlightGridPosition(layer , {gridX, gridY, multiple=2,type='ground'}={}) {
     //GRID ALREADY HIGHLIGHTED
     let gsW = canvas.grid.grid.w;
     let gsH = canvas.grid.grid.h;
@@ -174,12 +177,14 @@ export class TerrainLayer extends CanvasLayer{
 
       }else{
          this.costGrid[gridX][gridY].multiple=2;
-      } 
-      this.updateCostGridFlag();
+      }
+     //if(game.user.isGM) 
+      //this.updateCostGridFlag();
+
       square.getChildAt(0).text = `x${cost.multiple}`;
       return;
     }else{
-       layer.highlight(px[0],px[1]);
+      layer.highlight(px[0],px[1]);
       let s = canvas.dimensions.size;
       let terrainSquare = new TerrainSquare({x:gridX,y:gridY})
       let offset = 15;
@@ -203,81 +208,11 @@ export class TerrainLayer extends CanvasLayer{
     
       terrainSquare.addChild(text);
       layer.addChild(terrainSquare);
-      this.addToCostGrid(gridX,gridY);
-    }
-    
-    
-  }
- 
-	_registerMouseListeners() {
-	    this.addListener('pointerup', this._pointerUp);
-	    this.dragging = false;
-	}
-	_registerKeyboardListeners() {
-  	$(document).keydown((event) => {
-  		
-  		//if (ui.controls.activeControl !== this.layername) return;
-  		switch(event.which){
-  			case 27:
-  				event.stopPropagation();
-  				ui.menu.toggle();
-  			break;
-        case 17:
-          TLControlPress = true;
-          break;
-  			default:
-  			break;
-  		}
-  	});
-    $(document).keyup((event)=>{
-      switch(event.which){
-        case 17:
-          TLControlPress = false;
-          break;
-        default:
-        break;
-      }
-    })
-	}
-	_deRegisterMouseListeners(){
-    this.removeListener('pointerup', this._pointerUp);
-	}
-	_deRegisterKeyboardListeners(){
-		$(document).off('keydown')
-    $(document).off('keyup');
-	}
 
-	_pointerUp(e) {
-    let pos = e.data.getLocalPosition(canvas.app.stage);
-    let gridPt = canvas.grid.grid.getGridPositionFromPixels(pos.x,pos.y);
-    let pxX = canvas.grid.grid.getPixelsFromGridPosition(gridPt[0],gridPt[1])
-    
-    let [x,y] = gridPt;  //Normalize the returned data because it's in [y,x] format
-    let gsW = Math.round(canvas.grid.grid.w);
-    let gsH = Math.floor(canvas.grid.grid.h);
-    let gs = Math.min(gsW,gsH)
-    let gridPX = {x:Math.round(x*gsH),y:Math.round(y*gsW)}
-   
-    switch(e.data.button){
-      case 0:
-        if(game.activeTool == 'add' && !this.dragging){
-          this.highlightPosition(this.layerName,{gridX:x,gridY:y})
-         
-          this.updateCostGridFlag()
-        }else if(game.activeTool  == 'subtract'){
-          const layer = canvas.terrain.getHighlightLayer(this.layerName);
-          const key = `${gridPX.x}.${gridPX.y}`;
-          this.removeDifficultTerrain(layer,gridPX.x,gridPX.y);
-          this.removeFromCostGrid(x,y);
-          this.updateCostGridFlag()
-        }
-      break;
-      default:
-      break;
+     // this.addToCostGrid(gridX,gridY);
     }
-    this.dragging = false;
-	}
-  highlightHexPosition(layer,{gridX,gridY,multiple=2}={}){
+  }
+  highlightHexPosition(layer,{gridX,gridY,multiple=2,type='ground'}={}){
     
     let gsW = Math.floor(canvas.grid.grid.w);
     let gsH = Math.round(canvas.grid.grid.h);
@@ -306,7 +241,8 @@ export class TerrainLayer extends CanvasLayer{
       }else{
          this.costGrid[gridX][gridY].multiple=2;
       } 
-      this.updateCostGridFlag()
+
+       this.updateCostGridFlag()
       square.getChildAt(0).text = `x${cost.multiple}`;
       return;
     }else{
@@ -358,73 +294,184 @@ export class TerrainLayer extends CanvasLayer{
      
       
       layer.addChild(terrainSquare);
-      this.addToCostGrid(gridX,gridY,multiple);
+    //  this.addToCostGrid(gridX,gridY,multiple);
     }
   }
-  removeFromCostGrid(x,y){
-    if(typeof this.costGrid[x] == 'undefined') return false;
-    if(typeof this.costGrid[x][y] == 'undefined') return false;
-      
-    delete this.costGrid[x][y];
+	_registerMouseListeners() {
+	    this.addListener('pointerup', this._pointerUp);
+	    this.dragging = false;
+	}
+	_registerKeyboardListeners() {
+  	$(document).keydown((event) => {
+  		
+  		//if (ui.controls.activeControl !== this.layername) return;
+  		switch(event.which){
+  			case 27:
+  				event.stopPropagation();
+  				ui.menu.toggle();
+  			break;
+        case 17:
+          TLControlPress = true;
+          break;
+  			default:
+  			break;
+  		}
+  	});
+    $(document).keyup((event)=>{
+      switch(event.which){
+        case 17:
+          TLControlPress = false;
+          break;
+        default:
+        break;
+      }
+    })
+	}
+	_deRegisterMouseListeners(){
+    this.removeListener('pointerup', this._pointerUp);
+	}
+	_deRegisterKeyboardListeners(){
+		$(document).off('keydown')
+    $(document).off('keyup');
+	}
+  async addTerrain(x,y,emit=false,batch=true){
+    this.highlightPosition(this.layerName,{gridX:x,gridY:y})
+    this.addToCostGrid(x,y)
+    if(game.user.isGM && emit){
+      if(!batch) await this.updateCostGridFlag();
+      const data = {
+        action:'addTerrain',
+        arguments:[x,y]
+      }
+      game.socket.emit('module.TerrainLayer', data)
+    }
+
   }
-  addToCostGrid(x,y,multiple=2){
+	_pointerUp(e) {
+    let pos = e.data.getLocalPosition(canvas.app.stage);
+    let gridPt = canvas.grid.grid.getGridPositionFromPixels(pos.x,pos.y);
+    let pxX = canvas.grid.grid.getPixelsFromGridPosition(gridPt[0],gridPt[1])
+    
+    let [x,y] = gridPt;  //Normalize the returned data because it's in [y,x] format
+    let gsW = Math.round(canvas.grid.grid.w);
+    let gsH = Math.floor(canvas.grid.grid.h);
+    let gs = Math.min(gsW,gsH)
+    let gridPX = {x:Math.round(x*gsH),y:Math.round(y*gsW)}
    
-    if(typeof this.costGrid[x] == 'undefined')
+    switch(e.data.button){
+      case 0:
+        if(game.activeTool == 'add' && !this.dragging){
+          this.addTerrain(x,y,true,false)
+         
+        }else if(game.activeTool  == 'subtract'){
+          
+          this.removeTerrain(x,y,true,false);
+         
+        }
+      break;
+      default:
+      break;
+    }
+    this.dragging = false;
+	}
+ 
+
+  addToCostGrid(x,y,multiple=2,type='ground'){
+    console.log('addToCostGrid')
+    if(typeof this.costGrid[x] === 'undefined')
       this.costGrid[x] = {}
-    this.costGrid[x][y]={multiple:multiple,type:'ground'};
+    this.costGrid[x][y]={multiple,type};
   }
   async updateCostGridFlag(){
     let x = duplicate(this.costGrid);
-     await canvas.scene.unsetFlag('TerrainLayer','costGrid');
-     await canvas.scene.setFlag('TerrainLayer','costGrid',x)
+    await canvas.scene.unsetFlag('TerrainLayer','costGrid');
+    await canvas.scene.setFlag('TerrainLayer','costGrid',x)
   }
-	buildFromCostGrid(){
+	buildFromCostGrid(update=true){
 
     for(let x in this.costGrid){
       for(let y in this.costGrid[x]){
-        console.log(this.costGrid[x][y].multiple)
-        this.highlightPosition(this.layerName,{gridX:parseInt(x),gridY:parseInt(y),multiple:this.costGrid[x][y].multiple})
+        
+        this.highlightPosition(this.layerName,{gridX:parseInt(x),gridY:parseInt(y),multiple:this.costGrid[x][y].multiple,update:update})
       }
     }
   }
-  async resetGrid(){
+  async resetGrid(emit=false){
     this.getHighlightLayer(this.layerName).clear();
     this.getHighlightLayer(this.layerName).removeChildren();
     this.costGrid = {}
-    this.scene.unsetFlag('TerrainLayer','costGrid');
+    //only the GM who fired the event can set flag and emit, otherwise a game with two DM's might fire recursively.
+    if(game.user.isGM && emit){
+      await this.scene.unsetFlag('TerrainLayer','costGrid');
+
+      game.socket.emit('module.TerrainLayer',{action:'resetGrid',arguments:[]})
+    }
+   
   }
   selectSquares(coords){
     const startPx = canvas.grid.grid.getCenter(coords.x,coords.y)
     const startGrid = canvas.grid.grid.getGridPositionFromPixels(startPx[0],startPx[1])
 
     const endPx =  canvas.grid.grid.getCenter(coords.x+coords.width,coords.y+coords.height)
-    const endGrid = canvas.grid.grid.getGridPosiomtionFrPixels(endPx[0],endPx[1])
+    const endGrid = canvas.grid.grid.getGridPositionFromPixels(endPx[0],endPx[1])
 
-    for(let x = startGrid[1];x<=endGrid[1];x++){
-      for(let y = startGrid[0];y<=endGrid[0];y++){
-        let [pxX,pxY] = canvas.grid.grid.getPixelsFromGridPosition(y,x)
+    for(let x = startGrid[0];x<=endGrid[0];x++){
+      for(let y = startGrid[1];y<=endGrid[1];y++){
+      
         if(game.activeTool == 'add' && TLControlPress == false){
-          this.highlightPosition(this.layerName,{gridX:y,gridY:x})
+          //this.highlightPosition(this.layerName,{gridX:y,gridY:x})
           //this.addToCostGrid(x,y);
+          this.addTerrain(x,y,true,true)
         }else if(game.activeTool == 'subtract' || TLControlPress){
-          const layer = canvas.terrain.getHighlightLayer(this.layerName);
-          const key = `${pxX}.${pxY}`;
+          
 
-          this.removeDifficultTerrain(layer,key)
-          this.removeFromCostGrid(x,y);
+          this.removeTerrain(x,y,true,true)
+         
         }
       }
     }
     this.updateCostGridFlag();
 
   }
-  removeDifficultTerrain(layer,key){
+  /*updateCostGrid(grid){
+    for (let x in grid){
+      console.log(x)
+      if(typeof this.costGrid[x] === 'undefined'){
+        //There are no squares in 'x' yet.`
+        this.costGrid[x]={}
+      }
+      for (let y in grid[x]){
+        this.costGrid[x][y]=grid[x][y]
+      }
+
+    }
+     this.buildFromCostGrid(false);
+  }*/
+  async removeTerrain(x,y,emit=false,batch=true){
+    
+    const [pxX,pxY] = canvas.grid.grid.getPixelsFromGridPosition(x,y)
+    const layer = canvas.terrain.getHighlightLayer(this.layerName);
+    const key = `${pxX}.${pxY}`;
     if(!layer.positions.has(key)) return false;
     let square = this.getSquare(layer,key);
     square.destroy();
-    layer.positions.delete(key)
+    layer.positions.delete(key);
+    this.removeFromCostGrid(x,y)
+    if(game.user.isGM && emit){
+     if(!batch) await this.updateCostGridFlag();
+      const data = {
+        action:'removeTerrain',
+        arguments:[x,y]
+      }
+      game.socket.emit('module.TerrainLayer', data)
+    }
+  }
+  removeFromCostGrid(x,y,emit=false){
+    if(typeof this.costGrid[x] == 'undefined') return false;
+    if(typeof this.costGrid[x][y] == 'undefined') return false;
+      
+    delete this.costGrid[x][y];
     
-
   }
   getSquare(layer,key){
      let square = layer.children.find((x)=>{
@@ -483,9 +530,8 @@ export class TerrainLayer extends CanvasLayer{
     let square = this.getSquare(layer,key)
     if(game.activeTool == 'add' && square){
      
-      this.removeDifficultTerrain(layer,key);
-      this.removeFromCostGrid(x,y);
-      this.updateCostGridFlag();
+      this.removeTerrain(x,y,true);
+      
     }
   }
   
