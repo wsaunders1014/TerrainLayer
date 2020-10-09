@@ -12,6 +12,7 @@ This is still in very early stages still. Some ideas for the future of the mod i
 * Impassable tiles and/or "dangerous" tiles. 
 
 # Changelog
+0.0.5 - A whole lotta bugfixes.
 0.0.4 - Changes to Terrain layer now broadcast to players.
 0.0.3 - Fixed bug where multiple was being overwritten on scene load back to default 2
 0.0.2 - Realized Terrain Squares were getting painted over fog and sight layers. Fixed that right up.
