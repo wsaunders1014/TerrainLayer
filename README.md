@@ -12,6 +12,7 @@ This is still in very early stages still. Some ideas for the future of the mod i
 * Impassable tiles and/or "dangerous" tiles. 
 
 # Changelog
+0.0.6 - Fixed problem with hex grid and add warning message to unsupported gridless maps.
 0.0.5 - A whole lotta bugfixes.
 0.0.4 - Changes to Terrain layer now broadcast to players.
 0.0.3 - Fixed bug where multiple was being overwritten on scene load back to default 2

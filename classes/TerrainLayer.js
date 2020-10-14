@@ -217,6 +217,7 @@ export class TerrainLayer extends CanvasLayer{
       let even = canvas.grid.grid.even;
      
       let terrainSquare = new TerrainSquare({x:gridX,y:gridY})
+
       layer.highlight(pxX,pxY);
       
       let offset = gsH* 0.16;
@@ -302,6 +303,7 @@ export class TerrainLayer extends CanvasLayer{
     $(document).off('keyup');
 	}
   async addTerrain(x,y,emit=false,batch=true){
+
     this.highlightPosition(this.layerName,{gridX:x,gridY:y})
     this.addToCostGrid(x,y);
     if(game.user.isGM && emit){
@@ -316,9 +318,10 @@ export class TerrainLayer extends CanvasLayer{
   }
   async updateTerrain(x,y,emit=false,batch=true){
     const layer = canvas.terrain.getHighlightLayer(this.layerName);
-     const key = `${y*canvas.dimensions.size}.${x*canvas.dimensions.size}`;
+     let [pxX,pxY] = canvas.grid.grid.getPixelsFromGridPosition(x,y)
+     const key = `${pxX}.${pxY}`;
     let square = this.getSquare(layer,key)
-    console.log(x,y,square,key);
+
     let cost = this.costGrid[x][y];
     if(cost.multiple <3){
       this.costGrid[x][y].multiple+=1;
@@ -345,7 +348,12 @@ export class TerrainLayer extends CanvasLayer{
     let gsH = Math.floor(canvas.grid.grid.h);
     let gs = Math.min(gsW,gsH)
     let gridPX = {x:Math.round(x*gsH),y:Math.round(y*gsW)}
+
     const layer = canvas.terrain.getHighlightLayer(this.layerName);
+    if(canvas.grid.type == 0) {
+      alert('Difficult Terrain does not work with gridless maps.');
+      return false;
+    }
     switch(e.data.button){
       case 0:
         if(game.activeTool == 'add' && !this.dragging){
