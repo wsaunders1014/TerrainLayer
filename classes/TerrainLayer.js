@@ -66,20 +66,22 @@ export class TerrainHighlight extends PIXI.Graphics {
   }
 }
 export class TerrainLayer extends CanvasLayer{
-	constructor(scene){
+	constructor(){
 		super();
-    this.scene = scene;
-    this.sceneId = this.scene._id;
-    this.layerName = `DifficultTerrain.${this.scene._id}`;
+    this.scene = null;
+   // this.sceneId = this.scene._id;
+    //this.layerName = `DifficultTerrain.${this.scene._id}`;
     this.highlight = null;
     this.mouseInteractionManager = null;
     this.dragging = false;
-    this._addListeners();
+   // this._addListeners();
+
 	}
   async draw(){
 
     this._deRegisterMouseListeners()
     await super.draw();
+    console.log('draw')
     this.highlightLayers = {};
     this.scene = canvas.scene;
     this.sceneId = this.scene._id;
@@ -88,9 +90,11 @@ export class TerrainLayer extends CanvasLayer{
     this.addHighlightLayer(this.layerName);
     this.costGrid = this.scene.getFlag('TerrainLayer','costGrid') ?? {};
     Hooks.once('canvasReady',this.buildFromCostGrid.bind(this))
+    this._addListeners();
     return this;
   }
   async tearDown(){
+    console.log('tearDown')
     super.tearDown();
     this._deRegisterMouseListeners()
     this._deRegisterKeyboardListeners();
@@ -168,30 +172,34 @@ export class TerrainLayer extends CanvasLayer{
     
     const key = `${px[0]}.${px[1]}`;
     
-      layer.highlight(px[0],px[1]);
-      let s = canvas.dimensions.size;
-      let terrainSquare = new TerrainSquare({x:gridX,y:gridY})
-      let offset = 15;
-      terrainSquare.x = px[0];
-      terrainSquare.y = px[1];
-      terrainSquare.width = gsW;
-      terrainSquare.height = gsH;
-      terrainSquare.lineStyle(7, 0xffffff, 0.5);
-      terrainSquare.moveTo((gsW/2), offset);
-      terrainSquare.lineTo(offset, gsH-offset);
-      terrainSquare.lineTo(gsW-offset, gsH-offset);
-      terrainSquare.lineTo((gsW/2), offset);
-      terrainSquare.closePath();
-      terrainSquare.blendMode = PIXI.BLEND_MODES.OVERLAY;
-   
-      let text = new PIXI.Text('x'+multiple,{fontFamily : 'Arial', fontSize: 12, fill : 0xffffff,opacity:0.5, align : 'center'})
-      text.blendMode = PIXI.BLEND_MODES.OVERLAY;
-      text.anchor.set(0.5,0.5);
-      text.x = gsW/2;
-      text.y = (gsH/2)+7;
-    
-      terrainSquare.addChild(text);
-      layer.addChild(terrainSquare);
+    layer.highlight(px[0],px[1]);
+    let s = canvas.dimensions.size;
+    let terrainSquare = new TerrainSquare({x:gridX,y:gridY})
+    let offset = 15;
+    terrainSquare.x = px[0];
+    terrainSquare.y = px[1];
+    terrainSquare.width = gsW;
+    terrainSquare.height = gsH;
+    terrainSquare.lineStyle(7, 0xffffff, 0.5);
+    terrainSquare.moveTo((gsW/2), offset);
+    terrainSquare.lineTo(offset, gsH-offset);
+    terrainSquare.lineTo(gsW-offset, gsH-offset);
+    terrainSquare.lineTo((gsW/2), offset);
+    terrainSquare.closePath();
+    terrainSquare.blendMode = PIXI.BLEND_MODES.OVERLAY;
+  
+    let text = new PIXI.Text('x'+multiple,{fontFamily : 'Arial', fontSize: 12, fill : 0xffffff,opacity:game.settings.get('TerrainLayer','opacity'), align : 'center'})
+    text.blendMode = PIXI.BLEND_MODES.OVERLAY;
+    text.anchor.set(0.5,0.5);
+    text.x = gsW/2;
+    text.y = (gsH/2)+7;
+  
+    terrainSquare.addChild(text);
+    terrainSquare.scale.x = game.settings.get('TerrainLayer','scale');
+    terrainSquare.scale.y = game.settings.get('TerrainLayer','scale');
+    terrainSquare.alpha = game.settings.get('TerrainLayer','opacity')
+   // console.log(terrainSquare)
+    layer.addChild(terrainSquare);
 
      // this.addToCostGrid(gridX,gridY);
   
@@ -323,7 +331,7 @@ export class TerrainLayer extends CanvasLayer{
     let square = this.getSquare(layer,key)
 
     let cost = this.costGrid[x][y];
-    if(cost.multiple <3){
+    if(cost.multiple < game.settings.get('TerrainLayer','maxMultiple')){
       this.costGrid[x][y].multiple+=1;
 
     }else{
@@ -356,16 +364,18 @@ export class TerrainLayer extends CanvasLayer{
     }
     switch(e.data.button){
       case 0:
-        if(game.activeTool == 'add' && !this.dragging){
+        
+        if(game.activeTool == 'addterrain' && !this.dragging){
 
           if(this.terrainExists(pxX,pxY)){
             this.updateTerrain(x,y,true,false);
           }else{
             this.addTerrain(x,y,true,false)
           }
-        }else if(game.activeTool  == 'subtract'){
-          
-          this.removeTerrain(x,y,true,false);
+        }else if(game.activeTool  == 'subtractterrain'){
+          if(this.terrainExists(pxX,pxY)){
+           this.removeTerrain(x,y,true,false);
+         }
          
         }
       break;
@@ -393,7 +403,7 @@ export class TerrainLayer extends CanvasLayer{
     await canvas.scene.setFlag('TerrainLayer','costGrid',x)
   }
 	buildFromCostGrid(update=true){
-
+    canvas.terrain.highlight.children[0].removeChildren()
     for(let x in this.costGrid){
       for(let y in this.costGrid[x]){
         
@@ -423,12 +433,12 @@ export class TerrainLayer extends CanvasLayer{
     for(let x = startGrid[0];x<=endGrid[0];x++){
       for(let y = startGrid[1];y<=endGrid[1];y++){
       
-        if(game.activeTool == 'add' && TLControlPress == false){
+        if(game.activeTool == 'addterrain' && TLControlPress == false){
           //this.highlightPosition(this.layerName,{gridX:y,gridY:x})
           //this.addToCostGrid(x,y);
           if(!this.terrainExists(y*canvas.dimensions.size,x*canvas.dimensions.size))
             this.addTerrain(x,y,true,true)
-        }else if(game.activeTool == 'subtract' || TLControlPress){
+        }else if(game.activeTool == 'subtractterrain' || TLControlPress){
           
 
           this.removeTerrain(x,y,true,true)
@@ -441,7 +451,7 @@ export class TerrainLayer extends CanvasLayer{
   }
  
   async removeTerrain(x,y,emit=false,batch=true){
-    
+    console.log('removeTerrain')
     const [pxX,pxY] = canvas.grid.grid.getPixelsFromGridPosition(x,y)
     const layer = canvas.terrain.getHighlightLayer(this.layerName);
     const key = `${pxX}.${pxY}`;
@@ -477,7 +487,7 @@ export class TerrainLayer extends CanvasLayer{
   }
 
   _onDragLeftMove(e){
-    const isSelect = ["add","subtract"].includes(game.activeTool);
+    const isSelect = ["addterrain","subtractterrain"].includes(game.activeTool);
     if ( isSelect ) return this._onDragSelect(e);
   }
   _onDragSelect(event) {
@@ -502,11 +512,11 @@ export class TerrainLayer extends CanvasLayer{
     const tool = game.activeTool;
     // Conclude a select event
 
-    const isSelect = ["add","subtract"].includes(tool);
+    const isSelect = ["addterrain","subtractterrain"].includes(tool);
     if ( isSelect ) {
       canvas.controls.select.clear();
       canvas.controls.select.active = false;
-      if ( tool === "add" || tool === "subtract") return this.selectSquares(e.data.coords);
+      if ( tool === "addterrain" || tool === "subtractterrain") return this.selectSquares(e.data.coords);
     }
     canvas.controls.select.clear();
   }
@@ -521,9 +531,9 @@ export class TerrainLayer extends CanvasLayer{
     let key = `${px[0]}.${px[1]}`;
     const layer = canvas.terrain.getHighlightLayer(this.layerName);
     let square = this.getSquare(layer,key)
-    if(game.activeTool == 'add' && square){
+    if(game.activeTool == 'addterrain' && square){
      
-      this.removeTerrain(x,y,true);
+      this.removeTerrain(x,y,true,false);
       
     }
   }
@@ -552,10 +562,13 @@ export class TerrainLayer extends CanvasLayer{
     
   }
   activate() {
+
     super.activate();
+     const options = this.constructor.layerOptions;
     this.interactive = true;
     this._registerMouseListeners();
     this._registerKeyboardListeners();
+    //canvas.activeLayer = canvas.terrain;
   }
 	/**
 	* Actions upon layer becoming inactive

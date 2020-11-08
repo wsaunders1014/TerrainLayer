@@ -1,28 +1,28 @@
 Hooks.on('getSceneControlButtons', (controls) => {
-	if (game.user.isGM) {
+	if (game.user.isGM && canvas != null) {
 	    controls.push({
 			name: 'terrain',
 			title: game.i18n.localize('EM.sf'),
 			icon: 'fas fa-mountain',
 			layer: 'TerrainLayer',
 			tools: [
-				 {
-		          name: 'terraintoggle',
-		          title: game.i18n.localize('EM.onoff'),
-		          icon: 'fas fa-eye',
-		          onClick: () => {
-		            canvas.terrain.toggle(true);
-		          },
-		          active: canvas.terrain.highlight.children[0].visible,
-		          toggle: true
+				{
+		        	name: 'terraintoggle',
+		        	title: game.i18n.localize('EM.onoff'),
+		        	icon: 'fas fa-eye',
+		        	onClick: () => {
+		        	  canvas.terrain.toggle(true);
+		        	},
+		        	active: canvas.terrain.highlight.children[0].visible,
+		        	toggle: true
 		        },
 				{
-					name: 'add',
+					name: 'addterrain',
 					title:'EM.select',
 					icon:'fas fa-plus-square'
 				},
 				{
-					name:'subtract',
+					name:'subtractterrain',
 					title:'EM.subtract',
 					icon:'fas fa-minus-square'
 				},
@@ -53,19 +53,49 @@ Hooks.on('getSceneControlButtons', (controls) => {
 		          button: true,
 		        },
 			],
-			activeTool:'add'
+			activeTool:'addterrain'
 	  	})
 	}
 });
-Hooks.on('renderSceneControls', (controls) => {
-  // Switching to layer
-  if (controls.activeControl === 'terrain') {
-    // Open brush tools if not already open
-   
-  }
-  // Switching away from layer
-  else {
-    // Clear active tool
-    
-  }
-});
+Hooks.on('init',()=>{
+	game.settings.register('TerrainLayer', 'scale', {
+		name: "TerrainLayer.scale-s",
+		hint: "TerrainLayer.scale-l",
+		scope: "world",
+		config: true,
+		default: 1,
+		type: Number,
+		range:{
+			min:0.4,
+			max:1,
+			step:0.1
+		},
+      	onChange: () => {
+      		canvas.terrain.buildFromCostGrid();
+      	}
+    });
+    game.settings.register('TerrainLayer', 'opacity', {
+    	name: "TerrainLayer.opacity-s",
+		hint: "TerrainLayer.opacity-l",
+		scope: "world",
+		config: true,
+		default: 1,
+		type: Number,
+		range:{
+			min:0.3,
+			max:1,
+			step:0.1
+		},
+      	onChange: () => {
+      		canvas.terrain.buildFromCostGrid();
+      	}
+    });
+    game.settings.register('TerrainLayer', 'maxMultiple', {
+    	name: "TerrainLayer.opacity-s",
+		hint: "TerrainLayer.opacity-l",
+		scope: "world",
+		config: true,
+		default: 3,
+		type: Number
+    });
+})
