@@ -1,0 +1,17 @@
+{
+  "TerrainLayer.ok": "OK",
+  "TerrainLayer.sf": "지형 격자",
+  "TerrainLayer.select":"험지 추가",
+  "TerrainLayer.subtract":"험지 제거",
+  "TerrainLayer.fill":"격자 채우기",
+  "TerrainLayer.confirmFill":"모든 격자 공간을 험지로 표시하여 표시된 지점을 덮어쓴다.",
+  "TerrainLayer.onoff": "지형 활성화/비활성화",
+  "TerrainLayer.reset": "지형 리셋",
+  "TerrainLayer.confirmReset": "확실합니까? 지형 레이어가 리셋됩니다.",
+  "TerrainLayer.scale-s":"지형 아이콘 크기",
+  "TerrainLayer.scale-l":"아이콘의 크기",
+  "TerrainLayer.opacity-s":"지형 아이콘 불투명도",
+  "TerrainLayer.opacity-l":"아이콘과 숫자의 불투명도",
+  "TerrainLayer.opacity-s":"최대 승수",
+  "TerrainLayer.opacity-l":"얼마나 높게 설정되는지에 대한 설정."
+}
