@@ -171,6 +171,11 @@ export class TerrainLayer extends CanvasLayer{
     let px = canvas.grid.grid.getPixelsFromGridPosition(gridX,gridY)
     
     const key = `${px[0]}.${px[1]}`;
+	
+    /* add variable color yellow to red **/
+    const maxMultiple = game.settings.get('TerrainLayer','maxMultiple');
+    const green = 255 - Math.floor(255 / maxMultiple * (multiple-1));
+    const color = "rgb(255, "+green+" , 0)";
     
     layer.highlight(px[0],px[1]);
     let s = canvas.dimensions.size;
@@ -188,7 +193,7 @@ export class TerrainLayer extends CanvasLayer{
     terrainSquare.closePath();
     terrainSquare.blendMode = PIXI.BLEND_MODES.OVERLAY;
   
-    let text = new PIXI.Text('x'+multiple,{fontFamily : 'Arial', fontSize: 12, fill : 0xffffff,opacity:game.settings.get('TerrainLayer','opacity'), align : 'center'})
+    let text = new PIXI.Text('x'+multiple,{fontFamily : 'Arial', fontSize: 12, fill : color,opacity:game.settings.get('TerrainLayer','opacity'), align : 'center'})
     text.blendMode = PIXI.BLEND_MODES.OVERLAY;
     text.anchor.set(0.5,0.5);
     text.x = gsW/2;
