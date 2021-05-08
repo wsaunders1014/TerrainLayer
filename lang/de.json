@@ -1,0 +1,17 @@
+{
+  "TerrainLayer.ok": "OK",
+  "TerrainLayer.sf": "Gelände Gitter",
+  "TerrainLayer.select":"Füge schwieriges Gelände hinzu",
+  "TerrainLayer.subtract":"Entferne schwieriges Gelände",
+  "TerrainLayer.fill":"Fülle Gitter",
+  "TerrainLayer.confirmFill":"Das wird jeden Gitterplatz als schwieriges Gelände markieren und dabei alle Punkte überschreiben, die du bereits markiert hast.",
+  "TerrainLayer.onoff": "Aktiviere/Deaktiviere Gelände",
+  "TerrainLayer.reset": "Setze Gelände zurück",
+  "TerrainLayer.confirmReset": "Bist du sicher? Die Gelände Ebene wird zurückgesetzt.",
+  "TerrainLayer.scale-s":"Geländesymbol-Skalierung",
+  "TerrainLayer.scale-l":"Die Größe des Symbols.",
+  "TerrainLayer.opacity-s":"Geländesymbol-Deckkraft",
+  "TerrainLayer.opacity-l":"Deckkraft des Symbols und der Zahl.",
+  "TerrainLayer.opacity-s":"Multiplikatormaximum",
+  "TerrainLayer.opacity-l":"Setze, wie hoch der Multiplikator geht."
+}
